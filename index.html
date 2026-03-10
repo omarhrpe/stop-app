@@ -512,13 +512,18 @@
     </div>
 
     <div class="actions">
-      <button class="btn-surf" id="btn-nuevo-juego" onclick="playBtnClick();handleNuevoJuego()">NUEVO JUEGO</button>
-      <button class="btn-surf" id="btn-continuar" onclick="playBtnClick();goToConfig()" style="display:none;background:linear-gradient(180deg,#3ecf6e,#28a855 60%,#1a7a3c);box-shadow:0 6px 0 #0e4a22,0 8px 15px rgba(0,0,0,0.25);">▶ CONTINUAR</button>
-      <button class="btn-surf navy" onclick="playBtnClick();openInstrucciones()">📖 INSTRUCCIONES</button>
+      <button class="btn-surf" id="btn-nuevo-juego" ontouchstart="event.preventDefault();playBtnClick();handleNuevoJuego()" onclick="playBtnClick();handleNuevoJuego()">NUEVO JUEGO</button>
+      <button class="btn-surf" id="btn-continuar" ontouchstart="event.preventDefault();playBtnClick();goToConfig()" onclick="playBtnClick();goToConfig()" style="display:none;background:linear-gradient(180deg,#3ecf6e,#28a855 60%,#1a7a3c);box-shadow:0 6px 0 #0e4a22,0 8px 15px rgba(0,0,0,0.25);">▶ CONTINUAR</button>
+      <button class="btn-surf navy" ontouchstart="event.preventDefault();playBtnClick();openInstrucciones()" onclick="playBtnClick();openInstrucciones()">📖 INSTRUCCIONES</button>
       <label class="toggle-enie">
         <input type="checkbox" id="check-enie" onchange="toggleEnie(this.checked)" checked>
         <span class="toggle-track"><span class="toggle-thumb"></span></span>
         <span class="toggle-label">Incluir la Ñ</span>
+      </label>
+      <label class="toggle-enie">
+        <input type="checkbox" id="check-music" onchange="toggleMusic(this.checked)" checked>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span class="toggle-label">🎵 Música de fondo</span>
       </label>
     </div>
   </div>
@@ -537,14 +542,14 @@
     </div>
 
     <div style="display:flex;gap:12px;align-items:center;">
-      <button class="btn-surf navy" onclick="playBtnClick();showScreen('s-home')">MENÚ</button>
-      <button class="btn-surf" onclick="playBtnClick();startSorteo()">INICIAR</button>
+      <button class="btn-surf navy" ontouchstart="event.preventDefault();playBtnClick();showScreen('s-home')" onclick="playBtnClick();showScreen('s-home')">MENÚ</button>
+      <button class="btn-surf" ontouchstart="event.preventDefault();playBtnClick();startSorteo()" onclick="playBtnClick();startSorteo()">INICIAR</button>
     </div>
   </div>
 
   <!-- ===== PAUSA OVERLAY ===== -->
   <div id="pausa-overlay" style="position:fixed;inset:0;z-index:110;display:flex;align-items:center;justify-content:center;background:rgba(20,70,100,0.75);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity 0.3s;">
-    <button class="btn-surf navy" style="font-size:36px;padding:20px 60px;min-width:0;" onclick="playBtnClick();togglePausa()">CONTINUAR</button>
+    <button class="btn-surf navy" style="font-size:36px;padding:20px 60px;min-width:0;" ontouchstart="event.preventDefault();playTimerClick();togglePausa()" onclick="playTimerClick();togglePausa()">CONTINUAR</button>
   </div>
 
   <!-- ===== SCREEN 3: SORTEO ===== -->
@@ -558,7 +563,7 @@
     <div class="game-letter" id="game-letter">A</div>
     <div class="game-timer" id="game-timer">00:00</div>
     <div class="game-btns">
-      <button class="btn-surf navy" id="btn-pausa" onclick="playBtnClick();togglePausa()">PAUSA</button>
+      <button class="btn-surf navy" id="btn-pausa" ontouchstart="event.preventDefault();playTimerClick();togglePausa()" onclick="playTimerClick();togglePausa()">PAUSA</button>
       <button class="btn-surf red" onclick="triggerStop()">STOP</button>
     </div>
   </div>
@@ -591,7 +596,7 @@
           <div class="nb-step"><span class="step-num">10.</span> Toca <span class="mini-btn navy">MENÚ</span> para volver al inicio.</div>
           <div style="height:16px;"></div>
           <div style="display:flex;justify-content:center;">
-            <button class="nb-close-btn" onclick="playBtnClick();closeInstrucciones()">¡ENTENDIDO! 👍</button>
+            <button class="nb-close-btn" ontouchstart="event.preventDefault();playBtnClick();closeInstrucciones()" onclick="playBtnClick();closeInstrucciones()">¡ENTENDIDO! 👍</button>
           </div>
           <div style="height:12px;"></div>
         </div>
@@ -605,8 +610,8 @@
       <div style="font-family:'Fredoka One',cursive;font-size:22px;color:#c0392b;margin-bottom:12px;">⚠️ Nuevo juego</div>
       <div style="font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;color:#1a3a55;line-height:1.5;margin-bottom:20px;">Se borrarán las letras usadas y empezará desde cero. ¿Continuar?</div>
       <div style="display:flex;gap:12px;justify-content:center;">
-        <button class="btn-surf navy" style="font-size:16px;padding:10px 24px;min-width:0;" onclick="playBtnClick();cancelNuevoJuego()">CANCELAR</button>
-        <button class="btn-surf red" style="font-size:16px;padding:10px 24px;min-width:0;" onclick="playBtnClick();confirmNuevoJuego()">SÍ, BORRAR</button>
+        <button class="btn-surf navy" style="font-size:16px;padding:10px 24px;min-width:0;" ontouchstart="event.preventDefault();playBtnClick();cancelNuevoJuego()" onclick="playBtnClick();cancelNuevoJuego()">CANCELAR</button>
+        <button class="btn-surf red" style="font-size:16px;padding:10px 24px;min-width:0;" ontouchstart="event.preventDefault();playBtnClick();confirmNuevoJuego()" onclick="playBtnClick();confirmNuevoJuego()">SÍ, BORRAR</button>
       </div>
     </div>
   </div>
@@ -621,8 +626,9 @@ let currentTimer = 0;
 let timerInterval = null;
 let paused = false;
 let chosenLetter = 'A';
-let hasActiveGame = false; // ¿hay letras usadas / juego en curso?
+let hasActiveGame = false;
 let includeEnie = true;
+let musicEnabled = true;
 
 const ALPHABET_BASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 function getAlphabet() {
@@ -643,11 +649,12 @@ function getAudio() {
 let menuMusic = null;
 function initMenuMusic() {
   if (menuMusic) return;
-  menuMusic = new Audio('audio/menu_music.ogg');
+  menuMusic = new Audio('audios/menu_music.ogg');
   menuMusic.loop = true;
   menuMusic.volume = 0.5;
 }
 function playMenuMusic() {
+  if (!musicEnabled) return;
   initMenuMusic();
   if (menuMusic.paused) menuMusic.play().catch(() => {});
 }
@@ -672,22 +679,32 @@ function playFile(path, onFail) {
   a.play().catch(() => { onFail && onFail(); });
 }
 
-// ===== CLICK BOTONES =====
+// ===== CLICK BOTONES (volumen 40%) =====
 function playBtnClick() {
-  playFile('audio/btn_click.ogg', () => playTick(600, 0.04));
+  const path = 'audios/btn_click.ogg';
+  if (audioCache[path] === false) { playTick(600, 0.04); return; }
+  let a = audioCache[path];
+  if (!a) {
+    a = new Audio(path);
+    a.onerror = () => { audioCache[path] = false; };
+    audioCache[path] = a;
+  }
+  a.volume = 0.4;
+  a.currentTime = 0;
+  a.play().catch(() => playTick(600, 0.04));
 }
 
 // ===== LETRAS =====
 function playLetterSound(letter) {
-  playFile(`audio/letra_${letter}.ogg`, () => playTick(500 + letter.charCodeAt(0) * 3, 0.06));
+  playFile(`audios/letra_${letter}.ogg`, () => playTick(500 + letter.charCodeAt(0) * 3, 0.06));
 }
 
 // ===== STOP =====
 function playStopVoice() {
-  playFile('audio/stop.ogg', () => playStopSound());
+  playFile('audios/stop.ogg', () => playStopSound());
 }
 
-// ===== TIMER +/- =====
+// ===== TIMER +/- (sintético grave) =====
 function playTimerClick() {
   playTick(440, 0.05);
 }
@@ -766,6 +783,20 @@ document.addEventListener('click', function startMusic() {
 }, { once: true });
 function toggleEnie(checked) {
   includeEnie = checked;
+}
+
+// ===== MÚSICA TOGGLE =====
+function toggleMusic(checked) {
+  musicEnabled = checked;
+  if (checked) {
+    // Solo suena si estamos en home o config
+    const active = document.querySelector('.screen.active');
+    if (active && (active.id === 's-home' || active.id === 's-config')) {
+      playMenuMusic();
+    }
+  } else {
+    stopMenuMusic();
+  }
 }
 
 // ===== INSTRUCCIONES =====
@@ -889,7 +920,13 @@ function startGameTimer() {
     if (paused) return;
     currentTimer--;
     const el = document.getElementById('game-timer');
-    el.textContent = formatTime(currentTimer);
+    const timeStr = formatTime(currentTimer);
+    // Corazón especial cuando el segundo es 19 💑
+    if (currentTimer % 60 === 19) {
+      el.innerHTML = timeStr + '<sup style="font-size:18px;vertical-align:super;line-height:0;">❤️</sup>';
+    } else {
+      el.textContent = timeStr;
+    }
     if (currentTimer <= 10) { el.classList.add('urgent'); playTimerUrgent(); }
     if (currentTimer <= 0) { clearInterval(timerInterval); triggerStop(); }
   }, 1000);
