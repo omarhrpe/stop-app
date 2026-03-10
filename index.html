@@ -512,9 +512,9 @@
     </div>
 
     <div class="actions">
-      <button class="btn-surf" id="btn-nuevo-juego" onclick="handleNuevoJuego()">NUEVO JUEGO</button>
-      <button class="btn-surf" id="btn-continuar" onclick="goToConfig()" style="display:none;background:linear-gradient(180deg,#3ecf6e,#28a855 60%,#1a7a3c);box-shadow:0 6px 0 #0e4a22,0 8px 15px rgba(0,0,0,0.25);">▶ CONTINUAR</button>
-      <button class="btn-surf navy" onclick="openInstrucciones()">📖 INSTRUCCIONES</button>
+      <button class="btn-surf" id="btn-nuevo-juego" onclick="playBtnClick();handleNuevoJuego()">NUEVO JUEGO</button>
+      <button class="btn-surf" id="btn-continuar" onclick="playBtnClick();goToConfig()" style="display:none;background:linear-gradient(180deg,#3ecf6e,#28a855 60%,#1a7a3c);box-shadow:0 6px 0 #0e4a22,0 8px 15px rgba(0,0,0,0.25);">▶ CONTINUAR</button>
+      <button class="btn-surf navy" onclick="playBtnClick();openInstrucciones()">📖 INSTRUCCIONES</button>
       <label class="toggle-enie">
         <input type="checkbox" id="check-enie" onchange="toggleEnie(this.checked)" checked>
         <span class="toggle-track"><span class="toggle-thumb"></span></span>
@@ -537,14 +537,14 @@
     </div>
 
     <div style="display:flex;gap:12px;align-items:center;">
-      <button class="btn-surf navy" onclick="showScreen('s-home')">MENÚ</button>
-      <button class="btn-surf" onclick="startSorteo()">INICIAR</button>
+      <button class="btn-surf navy" onclick="playBtnClick();showScreen('s-home')">MENÚ</button>
+      <button class="btn-surf" onclick="playBtnClick();startSorteo()">INICIAR</button>
     </div>
   </div>
 
   <!-- ===== PAUSA OVERLAY ===== -->
   <div id="pausa-overlay" style="position:fixed;inset:0;z-index:110;display:flex;align-items:center;justify-content:center;background:rgba(20,70,100,0.75);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity 0.3s;">
-    <button class="btn-surf navy" style="font-size:36px;padding:20px 60px;min-width:0;" onclick="togglePausa()">CONTINUAR</button>
+    <button class="btn-surf navy" style="font-size:36px;padding:20px 60px;min-width:0;" onclick="playBtnClick();togglePausa()">CONTINUAR</button>
   </div>
 
   <!-- ===== SCREEN 3: SORTEO ===== -->
@@ -558,7 +558,7 @@
     <div class="game-letter" id="game-letter">A</div>
     <div class="game-timer" id="game-timer">00:00</div>
     <div class="game-btns">
-      <button class="btn-surf navy" id="btn-pausa" onclick="togglePausa()">PAUSA</button>
+      <button class="btn-surf navy" id="btn-pausa" onclick="playBtnClick();togglePausa()">PAUSA</button>
       <button class="btn-surf red" onclick="triggerStop()">STOP</button>
     </div>
   </div>
@@ -591,7 +591,7 @@
           <div class="nb-step"><span class="step-num">10.</span> Toca <span class="mini-btn navy">MENÚ</span> para volver al inicio.</div>
           <div style="height:16px;"></div>
           <div style="display:flex;justify-content:center;">
-            <button class="nb-close-btn" onclick="closeInstrucciones()">¡ENTENDIDO! 👍</button>
+            <button class="nb-close-btn" onclick="playBtnClick();closeInstrucciones()">¡ENTENDIDO! 👍</button>
           </div>
           <div style="height:12px;"></div>
         </div>
@@ -605,8 +605,8 @@
       <div style="font-family:'Fredoka One',cursive;font-size:22px;color:#c0392b;margin-bottom:12px;">⚠️ Nuevo juego</div>
       <div style="font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;color:#1a3a55;line-height:1.5;margin-bottom:20px;">Se borrarán las letras usadas y empezará desde cero. ¿Continuar?</div>
       <div style="display:flex;gap:12px;justify-content:center;">
-        <button class="btn-surf navy" style="font-size:16px;padding:10px 24px;min-width:0;" onclick="cancelNuevoJuego()">CANCELAR</button>
-        <button class="btn-surf red" style="font-size:16px;padding:10px 24px;min-width:0;" onclick="confirmNuevoJuego()">SÍ, BORRAR</button>
+        <button class="btn-surf navy" style="font-size:16px;padding:10px 24px;min-width:0;" onclick="playBtnClick();cancelNuevoJuego()">CANCELAR</button>
+        <button class="btn-surf red" style="font-size:16px;padding:10px 24px;min-width:0;" onclick="playBtnClick();confirmNuevoJuego()">SÍ, BORRAR</button>
       </div>
     </div>
   </div>
@@ -632,12 +632,6 @@ function getAlphabet() {
 }
 
 // ===== AUDIO =====
-// Sistema listo para audios externos de Stitch.
-// Coloca tus archivos en una carpeta "audio/" junto al HTML:
-//   audio/letra_A.mp3, audio/letra_B.mp3, ... audio/letra_Ñ.mp3
-//   audio/stop.mp3
-// Si el archivo no existe, cae al sonido sintético automáticamente.
-
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 function getAudio() {
@@ -645,10 +639,29 @@ function getAudio() {
   return audioCtx;
 }
 
-// Cache de Audio elements para no recargar
+// ===== MÚSICA DE FONDO =====
+let menuMusic = null;
+function initMenuMusic() {
+  if (menuMusic) return;
+  menuMusic = new Audio('audio/menu_music.ogg');
+  menuMusic.loop = true;
+  menuMusic.volume = 0.5;
+}
+function playMenuMusic() {
+  initMenuMusic();
+  if (menuMusic.paused) menuMusic.play().catch(() => {});
+}
+function stopMenuMusic() {
+  if (menuMusic && !menuMusic.paused) {
+    menuMusic.pause();
+    menuMusic.currentTime = 0;
+  }
+}
+
+// ===== CACHE GENERAL =====
 const audioCache = {};
 function playFile(path, onFail) {
-  if (audioCache[path] === false) { onFail && onFail(); return; } // ya sabemos que no existe
+  if (audioCache[path] === false) { onFail && onFail(); return; }
   let a = audioCache[path];
   if (!a) {
     a = new Audio(path);
@@ -659,15 +672,27 @@ function playFile(path, onFail) {
   a.play().catch(() => { onFail && onFail(); });
 }
 
+// ===== CLICK BOTONES =====
+function playBtnClick() {
+  playFile('audio/btn_click.ogg', () => playTick(600, 0.04));
+}
+
+// ===== LETRAS =====
 function playLetterSound(letter) {
-  const path = `audio/letra_${letter}.mp3`;
-  playFile(path, () => playTick(500 + letter.charCodeAt(0) * 3, 0.06));
+  playFile(`audio/letra_${letter}.ogg`, () => playTick(500 + letter.charCodeAt(0) * 3, 0.06));
 }
 
+// ===== STOP =====
 function playStopVoice() {
-  playFile('audio/stop.mp3', () => playStopSound());
+  playFile('audio/stop.ogg', () => playStopSound());
 }
 
+// ===== TIMER +/- =====
+function playTimerClick() {
+  playTick(440, 0.05);
+}
+
+// ===== SINTÉTICOS (fallback) =====
 function playTick(freq = 800, dur = 0.04) {
   try {
     const ctx = getAudio();
@@ -731,9 +756,14 @@ function formatTime(s) {
 function changeTimer(delta) {
   timerSeconds = Math.max(30, Math.min(600, timerSeconds + delta));
   document.getElementById('timer-display2').textContent = formatTime(timerSeconds);
+  playTimerClick();
 }
 
-// ===== Ñ TOGGLE =====
+// ===== INIT: arrancar música en primer toque =====
+document.addEventListener('click', function startMusic() {
+  playMenuMusic();
+  document.removeEventListener('click', startMusic);
+}, { once: true });
 function toggleEnie(checked) {
   includeEnie = checked;
 }
@@ -774,6 +804,12 @@ function confirmNuevoJuego() {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  // Música: suena en home, config e instrucciones; para en sorteo y juego
+  if (id === 's-home' || id === 's-config') {
+    playMenuMusic();
+  } else if (id === 's-sorteo' || id === 's-juego') {
+    stopMenuMusic();
+  }
 }
 
 function goToConfig() {
