@@ -205,7 +205,7 @@
   #s-home .actions { display: flex; flex-direction: column; gap: 16px; align-items: center; }
 
   /* ===== SCREEN 2: CONFIG ===== */
-  #s-config { justify-content: space-between; padding: 30px 20px; }
+  #s-config { justify-content: flex-start; padding: 16px 20px; gap: 10px; overflow-y: auto; }
   .config-title {
     font-family: 'Fredoka One', cursive;
     font-size: 24px; color: white;
@@ -214,17 +214,17 @@
   }
   .alphabet-grid {
     display: flex; flex-wrap: wrap;
-    gap: 5px; justify-content: center;
-    padding: 10px 0;
+    gap: 4px; justify-content: center;
+    padding: 4px 0;
   }
   .alpha-letter {
-    width: 32px; height: 32px;
-    border-radius: 8px;
+    width: 28px; height: 28px;
+    border-radius: 7px;
     background: rgba(255,255,255,0.3);
     border: 2px solid rgba(255,255,255,0.5);
     display: flex; align-items: center; justify-content: center;
     font-family: 'Fredoka One', cursive;
-    font-size: 15px; color: white;
+    font-size: 13px; color: white;
     text-shadow: 1px 1px 0 var(--navy);
   }
 
@@ -564,7 +564,6 @@
   <div id="stop-overlay">
     <div class="stop-word">STOP!</div>
   </div>
-</div>
 
   <!-- ===== INSTRUCCIONES OVERLAY ===== -->
   <div id="instrucciones-overlay">
@@ -608,6 +607,8 @@
       </div>
     </div>
   </div>
+
+</div>
 
 <script>
 // ===== STATE =====
