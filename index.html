@@ -864,13 +864,10 @@ function showScreen(id) {
       playMenuMusic();
       if (toggleP2) toggleP2.style.display = 'none';
     } else {
-      // Ya se jugó: silenciar, apagar toggle, mostrar toggle P2 apagado
-      silenceMenuMusic();
-      musicEnabled = false;
-      const c1 = document.getElementById('check-music');
-      if (c1) c1.checked = false;
+      // P2 con letras: respetar musicEnabled, mostrar toggle P2
+      if (musicEnabled) playMenuMusic(); else silenceMenuMusic();
       const c2 = document.getElementById('check-music-p2');
-      if (c2) c2.checked = false;
+      if (c2) c2.checked = musicEnabled;
       if (toggleP2) toggleP2.style.display = 'flex';
     }
   } else {
@@ -982,6 +979,10 @@ function triggerStop() {
   paused = true;
   if (!usedLetters.includes(chosenLetter)) usedLetters.push(chosenLetter);
   playStopVoice();
+  // Solo aquí apagamos la música — al volver a P2 debate en silencio
+  musicEnabled = false;
+  const c1 = document.getElementById('check-music');
+  if (c1) c1.checked = false;
   const overlay = document.getElementById('stop-overlay');
   overlay.classList.add('visible');
   setTimeout(() => {
