@@ -545,6 +545,19 @@
       <button class="btn-surf navy" onclick="playBtnClick();showScreen('s-home')">MENÚ</button>
       <button class="btn-surf" onclick="playBtnClick();startSorteo()">INICIAR</button>
     </div>
+    <label class="toggle-enie" id="music-toggle-p2" style="display:none;" onclick="playTimerClick()">
+      <input type="checkbox" id="check-music-p2" onchange="toggleMusicP2(this.checked)">
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      <span class="toggle-label">🎵 Música</span>
+    </label>
+
+    <div id="toggle-music-p2" style="display:none;">
+      <label class="toggle-enie">
+        <input type="checkbox" id="check-music-p2" onchange="toggleMusic(this.checked)">
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span class="toggle-label">🎵 Música de fondo</span>
+      </label>
+    </div>
   </div>
 
   <!-- ===== PAUSA OVERLAY ===== -->
@@ -654,15 +667,26 @@ function initMenuMusic() {
   menuMusic.volume = 0.5;
 }
 function playMenuMusic() {
-  if (!musicEnabled) return;
   initMenuMusic();
   if (menuMusic.paused) menuMusic.play().catch(() => {});
+  // Subir volumen suavemente
+  menuMusic.volume = 0;
+  let v = 0;
+  const fade = setInterval(() => {
+    v = Math.min(0.5, v + 0.05);
+    menuMusic.volume = v;
+    if (v >= 0.5) clearInterval(fade);
+  }, 40);
 }
 function stopMenuMusic() {
-  if (menuMusic && !menuMusic.paused) {
-    menuMusic.pause();
-    menuMusic.currentTime = 0;
-  }
+  // Bajar volumen pero NO pausar — para que al reactivar no reinicie
+  if (!menuMusic) return;
+  let v = menuMusic.volume;
+  const fade = setInterval(() => {
+    v = Math.max(0, v - 0.05);
+    menuMusic.volume = v;
+    if (v <= 0) clearInterval(fade);
+  }, 40);
 }
 
 // ===== CACHE GENERAL =====
@@ -780,6 +804,7 @@ document.addEventListener('touchstart', function unlockAudio() {
   document.removeEventListener('touchstart', unlockAudio);
 }, { passive: true });
 document.addEventListener('click', function startMusic() {
+  initMenuMusic(); // empieza corriendo en silencio, playMenuMusic sube si corresponde
   playMenuMusic();
   document.removeEventListener('click', startMusic);
 }, { once: true });
@@ -787,17 +812,60 @@ function toggleEnie(checked) {
   includeEnie = checked;
 }
 
+function toggleMusicP2(checked) {
+  musicEnabled = checked;
+  // Sincronizar toggle de P1
+  const chkP1 = document.getElementById('check-music');
+  if (chkP1) chkP1.checked = checked;
+  if (checked) {
+    playMenuMusic();
+  } else {
+    stopMenuMusic();
+  }
+}
+
+function toggleMusicP2(checked) {
+  musicEnabled = checked;
+  // Sincronizar con toggle de P1
+  const chkP1 = document.getElementById('check-music');
+  if (chkP1) chkP1.checked = checked;
+  if (checked) {
+    playMenuMusic();
+  } else {
+    silenceMenuMusic();
+  }
+}
+
+// ===== MÚSICA TOGGLE P2 =====
+function toggleMusicP2(checked) {
+  musicEnabled = checked;
+  // Sincronizar toggle P1
+  const chkP1 = document.getElementById('check-music');
+  if (chkP1) chkP1.checked = checked;
+  if (checked) {
+    initMenuMusic();
+    menuMusic.volume = 0.5;
+  } else {
+    silenceMenuMusic();
+  }
+}
+
 // ===== MÚSICA TOGGLE =====
 function toggleMusic(checked) {
   musicEnabled = checked;
+  // Sincronizar ambos checkboxes
+  ['check-music', 'check-music-p2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = checked;
+  });
   if (checked) {
-    // Solo suena si estamos en home o config
-    const active = document.querySelector('.screen.active');
-    if (active && (active.id === 's-home' || active.id === 's-config')) {
-      playMenuMusic();
-    }
+    // Subir volumen sin reiniciar
+    initMenuMusic();
+    menuMusic.volume = 0.5;
+    if (menuMusic.paused) menuMusic.play().catch(() => {});
   } else {
-    stopMenuMusic();
+    // Solo bajar volumen
+    if (menuMusic) menuMusic.volume = 0;
   }
 }
 
@@ -827,9 +895,11 @@ function confirmNuevoJuego() {
   cancelNuevoJuego();
   usedLetters = [];
   hasActiveGame = false;
-  // Ocultar continuar manualmente antes de ir a config
   const btnC = document.getElementById('btn-continuar');
   if (btnC) btnC.style.display = 'none';
+  // Al nuevo juego: restaurar música según toggle de P1
+  const cb1 = document.getElementById('check-music');
+  musicEnabled = cb1 ? cb1.checked : true;
   goToConfig();
 }
 
@@ -837,11 +907,30 @@ function confirmNuevoJuego() {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  // Música: suena en home, config e instrucciones; para en sorteo y juego
-  if (id === 's-home' || id === 's-config') {
-    playMenuMusic();
+  
+  const toggleP2 = document.getElementById('toggle-music-p2');
+  
+  if (id === 's-home') {
+    if (musicEnabled) playMenuMusic();
+    if (toggleP2) toggleP2.style.display = 'none';
+  } else if (id === 's-config') {
+    if (usedLetters.length === 0) {
+      // P2 sin letras jugadas: música si toggle ON, sin toggle visible
+      if (musicEnabled) playMenuMusic(); else stopMenuMusic();
+      if (toggleP2) toggleP2.style.display = 'none';
+    } else {
+      // P2 con letras jugadas: bajar volumen, apagar toggle, mostrar toggle P2
+      if (menuMusic) menuMusic.volume = 0;
+      musicEnabled = false;
+      ['check-music','check-music-p2'].forEach(id2 => {
+        const el = document.getElementById(id2);
+        if (el) el.checked = false;
+      });
+      if (toggleP2) toggleP2.style.display = 'flex';
+    }
   } else if (id === 's-sorteo' || id === 's-juego') {
-    stopMenuMusic();
+    if (menuMusic) menuMusic.volume = 0;
+    if (toggleP2) toggleP2.style.display = 'none';
   }
 }
 
@@ -950,6 +1039,13 @@ function triggerStop() {
   clearInterval(timerInterval);
   paused = true;
   if (!usedLetters.includes(chosenLetter)) usedLetters.push(chosenLetter);
+  // Apagar música automáticamente al hacer STOP
+  musicEnabled = false;
+  silenceMenuMusic();
+  const cb1 = document.getElementById('check-music');
+  const cb2 = document.getElementById('check-music-p2');
+  if (cb1) cb1.checked = false;
+  if (cb2) cb2.checked = false;
   playStopVoice();
   const overlay = document.getElementById('stop-overlay');
   overlay.classList.add('visible');
