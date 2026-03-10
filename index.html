@@ -646,11 +646,11 @@ let musicEnabled = true;
 const ALPHABET_BASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 function getAlphabet() {
   const arr = [...ALPHABET_BASE];
-  if (includeEnie) arr.splice(14, 0, 'Ñ'); // posición correcta N→Ñ→O
+  if (includeEnie) arr.splice(14, 0, 'Ñ');
   return arr;
 }
 
-// ===== AUDIO =====
+// ===== AUDIO ENGINE =====
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 function getAudio() {
@@ -658,79 +658,57 @@ function getAudio() {
   return audioCtx;
 }
 
-// ===== MÚSICA DE FONDO =====
+// Música: siempre corriendo, solo cambia volumen
 let menuMusic = null;
 function initMenuMusic() {
   if (menuMusic) return;
   menuMusic = new Audio('audios/menu_music.ogg');
   menuMusic.loop = true;
-  menuMusic.volume = 0.5;
+  menuMusic.volume = 0;
 }
 function playMenuMusic() {
-  initMenuMusic();
+  if (!musicEnabled) return;
+  if (!menuMusic) initMenuMusic();
   if (menuMusic.paused) menuMusic.play().catch(() => {});
-  // Subir volumen suavemente
-  menuMusic.volume = 0;
-  let v = 0;
-  const fade = setInterval(() => {
-    v = Math.min(0.5, v + 0.05);
-    menuMusic.volume = v;
-    if (v >= 0.5) clearInterval(fade);
-  }, 40);
+  menuMusic.volume = 0.5;
 }
-function stopMenuMusic() {
-  // Bajar volumen pero NO pausar — para que al reactivar no reinicie
-  if (!menuMusic) return;
-  let v = menuMusic.volume;
-  const fade = setInterval(() => {
-    v = Math.max(0, v - 0.05);
-    menuMusic.volume = v;
-    if (v <= 0) clearInterval(fade);
-  }, 40);
+function silenceMenuMusic() {
+  if (menuMusic) menuMusic.volume = 0;
 }
 
-// ===== CACHE GENERAL =====
+// Cache de audio
 const audioCache = {};
 function playFile(path, onFail) {
   let a = audioCache[path];
   if (!a) {
     a = new Audio(path);
-    a.onerror = () => { delete audioCache[path]; };
+    a.onerror = () => { delete audioCache[path]; onFail && onFail(); };
     audioCache[path] = a;
   }
   a.currentTime = 0;
   a.play().catch(() => { onFail && onFail(); });
 }
 
-// ===== CLICK BOTONES (volumen 40%) =====
 function playBtnClick() {
   const path = 'audios/btn_click.ogg';
   let a = audioCache[path];
-  if (!a) {
-    a = new Audio(path);
-    audioCache[path] = a;
-  }
+  if (!a) { a = new Audio(path); audioCache[path] = a; }
   a.volume = 0.4;
   a.currentTime = 0;
   a.play().catch(() => playTick(600, 0.04));
 }
 
-// ===== LETRAS =====
 function playLetterSound(letter) {
   playFile(`audios/letra_${letter}.ogg`, () => playTick(500 + letter.charCodeAt(0) * 3, 0.06));
 }
 
-// ===== STOP =====
 function playStopVoice() {
   playFile('audios/stop.ogg', () => playStopSound());
 }
 
-// ===== TIMER +/- (sintético grave) =====
-function playTimerClick() {
-  playTick(440, 0.05);
-}
+function playTimerClick() { playTick(440, 0.05); }
 
-// ===== SINTÉTICOS (fallback) =====
+// Sintéticos fallback
 function playTick(freq = 800, dur = 0.04) {
   try {
     const ctx = getAudio();
@@ -750,9 +728,8 @@ function playDrum(t = 0) {
     const ctx = getAudio();
     const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
     const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++)
       data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 3);
-    }
     const src = ctx.createBufferSource();
     const gain = ctx.createGain();
     src.buffer = buf; src.connect(gain); gain.connect(ctx.destination);
@@ -777,12 +754,16 @@ function playStopSound() {
   } catch(e) {}
 }
 
-function playSorteoSound(speed) {
-  const freq = 400 + speed * 600;
-  playTick(freq, 0.03);
-}
-
+function playSorteoSound(speed) { playTick(400 + speed * 600, 0.03); }
 function playTimerUrgent() { playTick(1000, 0.05); }
+
+// Desbloquear AudioContext en primer toque
+document.addEventListener('click', function unlock() {
+  initMenuMusic();
+  if (menuMusic.paused) menuMusic.play().catch(() => {});
+  if (audioCtx) audioCtx.resume();
+  document.removeEventListener('click', unlock);
+}, { once: true });
 
 // ===== TIMER =====
 function formatTime(s) {
@@ -797,90 +778,29 @@ function changeTimer(delta) {
   playTimerClick();
 }
 
-// ===== INIT: arrancar música en primer toque =====
-// Fix delay táctil: pre-cargar AudioContext en primer toque
-document.addEventListener('touchstart', function unlockAudio() {
-  if (audioCtx) audioCtx.resume();
-  document.removeEventListener('touchstart', unlockAudio);
-}, { passive: true });
-document.addEventListener('click', function startMusic() {
-  initMenuMusic(); // empieza corriendo en silencio, playMenuMusic sube si corresponde
-  playMenuMusic();
-  document.removeEventListener('click', startMusic);
-}, { once: true });
-function toggleEnie(checked) {
-  includeEnie = checked;
-}
+// ===== TOGGLES =====
+function toggleEnie(checked) { includeEnie = checked; }
 
-function toggleMusicP2(checked) {
-  musicEnabled = checked;
-  // Sincronizar toggle de P1
-  const chkP1 = document.getElementById('check-music');
-  if (chkP1) chkP1.checked = checked;
-  if (checked) {
-    playMenuMusic();
-  } else {
-    stopMenuMusic();
-  }
-}
-
-function toggleMusicP2(checked) {
-  musicEnabled = checked;
-  // Sincronizar con toggle de P1
-  const chkP1 = document.getElementById('check-music');
-  if (chkP1) chkP1.checked = checked;
-  if (checked) {
-    playMenuMusic();
-  } else {
-    silenceMenuMusic();
-  }
-}
-
-// ===== MÚSICA TOGGLE P2 =====
-function toggleMusicP2(checked) {
-  musicEnabled = checked;
-  // Sincronizar toggle P1
-  const chkP1 = document.getElementById('check-music');
-  if (chkP1) chkP1.checked = checked;
-  if (checked) {
-    initMenuMusic();
-    menuMusic.volume = 0.5;
-  } else {
-    silenceMenuMusic();
-  }
-}
-
-// ===== MÚSICA TOGGLE =====
 function toggleMusic(checked) {
   musicEnabled = checked;
-  // Sincronizar ambos checkboxes
-  ['check-music', 'check-music-p2'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.checked = checked;
-  });
-  if (checked) {
-    // Subir volumen sin reiniciar
-    initMenuMusic();
-    menuMusic.volume = 0.5;
-    if (menuMusic.paused) menuMusic.play().catch(() => {});
-  } else {
-    // Solo bajar volumen
-    if (menuMusic) menuMusic.volume = 0;
-  }
+  // Sincronizar ambos toggles
+  const c1 = document.getElementById('check-music');
+  const c2 = document.getElementById('check-music-p2');
+  if (c1) c1.checked = checked;
+  if (c2) c2.checked = checked;
+  const active = document.querySelector('.screen.active');
+  const inMusicScreen = active && (active.id === 's-home' || active.id === 's-config');
+  if (checked && inMusicScreen) playMenuMusic();
+  else silenceMenuMusic();
 }
 
 // ===== INSTRUCCIONES =====
-function openInstrucciones() {
-  document.getElementById('instrucciones-overlay').classList.add('visible');
-}
-function closeInstrucciones() {
-  document.getElementById('instrucciones-overlay').classList.remove('visible');
-}
+function openInstrucciones() { document.getElementById('instrucciones-overlay').classList.add('visible'); }
+function closeInstrucciones() { document.getElementById('instrucciones-overlay').classList.remove('visible'); }
 
-// ===== NUEVO JUEGO POPUP =====
+// ===== NUEVO JUEGO =====
 function handleNuevoJuego() {
   if (hasActiveGame && usedLetters.length > 0) {
-    // Mostrar popup confirmación
     const o = document.getElementById('nuevojuego-overlay');
     o.style.opacity = '1'; o.style.pointerEvents = 'all';
   } else {
@@ -897,9 +817,6 @@ function confirmNuevoJuego() {
   hasActiveGame = false;
   const btnC = document.getElementById('btn-continuar');
   if (btnC) btnC.style.display = 'none';
-  // Al nuevo juego: restaurar música según toggle de P1
-  const cb1 = document.getElementById('check-music');
-  musicEnabled = cb1 ? cb1.checked : true;
   goToConfig();
 }
 
@@ -907,36 +824,35 @@ function confirmNuevoJuego() {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  
-  const toggleP2 = document.getElementById('toggle-music-p2');
-  
+
+  const toggleP2 = document.getElementById('music-toggle-p2');
+
   if (id === 's-home') {
-    if (musicEnabled) playMenuMusic();
+    playMenuMusic();
     if (toggleP2) toggleP2.style.display = 'none';
   } else if (id === 's-config') {
     if (usedLetters.length === 0) {
-      // P2 sin letras jugadas: música si toggle ON, sin toggle visible
-      if (musicEnabled) playMenuMusic(); else stopMenuMusic();
+      // Primera vez en P2: música si toggle ON, sin toggle P2
+      playMenuMusic();
       if (toggleP2) toggleP2.style.display = 'none';
     } else {
-      // P2 con letras jugadas: bajar volumen, apagar toggle, mostrar toggle P2
-      if (menuMusic) menuMusic.volume = 0;
+      // Ya se jugó: silenciar, apagar toggle, mostrar toggle P2 apagado
+      silenceMenuMusic();
       musicEnabled = false;
-      ['check-music','check-music-p2'].forEach(id2 => {
-        const el = document.getElementById(id2);
-        if (el) el.checked = false;
-      });
+      const c1 = document.getElementById('check-music');
+      if (c1) c1.checked = false;
+      const c2 = document.getElementById('check-music-p2');
+      if (c2) c2.checked = false;
       if (toggleP2) toggleP2.style.display = 'flex';
     }
-  } else if (id === 's-sorteo' || id === 's-juego') {
-    if (menuMusic) menuMusic.volume = 0;
+  } else {
+    silenceMenuMusic();
     if (toggleP2) toggleP2.style.display = 'none';
   }
 }
 
 function goToConfig() {
   buildAlphabet();
-  // Mostrar/ocultar CONTINUAR en home según si hay juego activo
   const btnContinuar = document.getElementById('btn-continuar');
   if (btnContinuar) btnContinuar.style.display = hasActiveGame ? 'block' : 'none';
   showScreen('s-config');
@@ -984,7 +900,6 @@ function startSorteo() {
       chosenLetter = ALPHA[Math.floor(Math.random() * ALPHA.length)];
       document.getElementById('sorteo-letter').textContent = chosenLetter;
       for (let i = 0; i < 5; i++) playDrum(i * 0.08);
-      // Reproducir voz de la letra al mostrarla
       setTimeout(() => playLetterSound(chosenLetter), 400);
       setTimeout(() => startJuego(), 1400);
     }
@@ -1012,7 +927,6 @@ function startGameTimer() {
     currentTimer--;
     const el = document.getElementById('game-timer');
     const timeStr = formatTime(currentTimer);
-    // Corazón especial cuando el segundo es 19 💑
     if (currentTimer % 60 === 19) {
       el.innerHTML = timeStr + '<sup style="font-size:18px;vertical-align:super;line-height:0;">❤️</sup>';
     } else {
@@ -1039,13 +953,6 @@ function triggerStop() {
   clearInterval(timerInterval);
   paused = true;
   if (!usedLetters.includes(chosenLetter)) usedLetters.push(chosenLetter);
-  // Apagar música automáticamente al hacer STOP
-  musicEnabled = false;
-  silenceMenuMusic();
-  const cb1 = document.getElementById('check-music');
-  const cb2 = document.getElementById('check-music-p2');
-  if (cb1) cb1.checked = false;
-  if (cb2) cb2.checked = false;
   playStopVoice();
   const overlay = document.getElementById('stop-overlay');
   overlay.classList.add('visible');
